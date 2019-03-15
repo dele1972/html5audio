@@ -1,0 +1,86 @@
+<!doctype html>
+<html class="no-js" lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>HTML5 Audio</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="manifest" href="site.webmanifest">
+
+  <meta http-equiv="cache-control" content="no-cache" />
+
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link href="https://fonts.googleapis.com/css?family=PT+Sans+Narrow|Open+Sans+Condensed:300" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/normalize.css">
+  <link rel="stylesheet" href="../styles/main.css">
+  
+  <link rel="stylesheet" href="../styles/spectre-0.5.8/spectre.min.css" />
+  <link rel="stylesheet" href="../styles/spectre-0.5.8/spectre-exp.min.css" />
+  <link rel="stylesheet" href="../styles/spectre-0.5.8/spectre-icons.min.css" />
+
+  <link rel="stylesheet" href="../styles/custom.css?parameter=2" type="text/css">
+
+  <!-- include embedded font awesome (registered)-->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+</head>
+
+<body>
+  <!--[if lte IE 9]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+  <![endif]-->
+
+  <!-- Add your site or application content here -->
+
+  <div id="head">
+    <h1>HTML5 Audio / Tutorial Part 2</h1>
+  </div>
+  <div id="main">
+    <div id="content_text">
+        <h2>Create a volume meter</h2>
+      <p>
+        bla bla
+      </p>
+      <button id="btnPlay" class="btn btn-success disabled">
+        <i id="iconPlay" class="fas fa-play-circle"></i>
+      </button>
+      <div id="samplerate"></div>
+    </div>
+    <div style="display: block">
+        <canvas
+          id="myCanvas1"
+          width="50"
+          height="130"
+          style="background-color: whitesmoke; max-width: 50px; max-height: 130px;"
+          >Your Browser don't support canvas!</canvas
+        >
+      </div>
+  </div>
+
+
+  <div id="spinner" style="position: absolute; top:25%; left: 25%;width: 50%;background: whitesmoke;color:#393839;">
+    <div id="center" style="margin:0 auto;width: 25%;text-align: center">
+      <div class="lds-roller">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      </div>
+      <div id="spinnerText" style="margin:15px auto;width: 25%;text-align: center; color:#393839;"></div>
+  </div>
+
+
+  <script src="../scripts/vendor/modernizr-3.6.0.min.js"></script>
+  <!--<script src="../scripts/plugins.js"></script>-->
+  <!--script src="../scripts/main.js?v=0.1"></script--><!-- https://stackoverflow.com/a/7772567 -->
+  <script src="../scripts/tutorial/part-2.js?v=0.1"></script><!-- https://stackoverflow.com/a/7772567 -->
+  <!--
+    type bei javascript nicht benötigt
+    (https://www.w3schools.com/js/js_conventions.asp
+    'Loading JavaScript in HTML')
+   -->
+
+</body>
+
+</html>

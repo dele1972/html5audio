@@ -1,0 +1,189 @@
+* {
+  /* Rand um die eigentliche Seite verhindern */
+  margin: 0;
+  /* alle Rahmen besitzen nun die gleiche Außengröße, Padding und Rahmenbreite haben darauf keinen Einfluss mehr */
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: 'Open Sans Condensed', sans-serif, Arial;
+  font-kerning: auto;
+  background-color: #393839;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+h1 {
+  font-size: 1.8em;
+  /*margin: 0.67em 0;*/
+  margin-top: 0;
+  padding: 3% 0;
+  color: #25598F;
+  text-align: center;
+  font-family: 'PT Sans Narrow', sans-serif;
+}
+
+h2, h3 {
+  font-family: 'PT Sans Narrow', sans-serif;
+  padding: 1% 0;
+  color: #636E04;
+}
+
+p {
+  padding: 1% 0;
+}
+
+a, a:visited {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+canvas {
+  /* position: absolute; */
+  background-color: transparent;
+  /*background-color: whitesmoke;*/
+  width:100%;
+  height: 100%;
+}
+
+
+#main {
+  position: relative;
+  margin: auto;
+  padding: 0 2%;
+  width: 85%;
+  height: 100%;
+  background-color: #2C2A2D;
+}
+#head {
+  background-color: #052342;
+  border-top: 5px solid #FF9900;
+}
+#buttons {
+  position: fixed;
+  z-index: 10;
+  /*margin: -20px;*/
+  /*text-align: center;*/
+  /*height: 30px;*/
+}
+#btn_toggleButton {
+  cursor: pointer; /* https://www.w3schools.com/cssref/pr_class_cursor.asp */
+  color: #FFA928; /* https://www.w3schools.com/html/html_colors.asp */
+  font-size: 2em;
+}
+#content_text {
+  display: block;
+}
+#content_action {
+  display: none;
+  height: 100%;
+  width: 100%;
+}
+#myCanvas {
+  border:1px dashed #d3d3d3;
+  /*z-index: 1;*/
+}
+/*#myCanvas2 {*/
+  /*!*border:1px dashed #d3d3d3;*!*/
+  /*z-index: 2;*/
+/*}*/
+
+/* css loading spinner (from https://loading.io/css/) */
+.lds-roller {
+  display: inline-block;
+  position: relative;
+  margin-top: 25px;
+  width: 64px;
+  height: 64px;
+}
+.lds-roller div {
+  animation: lds-roller 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  transform-origin: 32px 32px;
+}
+.lds-roller div:after {
+  content: " ";
+  display: block;
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background:red;
+  margin: -3px 0 0 -3px;
+}
+.lds-roller div:nth-child(1) {
+  animation-delay: -0.036s;
+}
+.lds-roller div:nth-child(1):after {
+  top: 50px;
+  left: 50px;
+}
+.lds-roller div:nth-child(2) {
+  animation-delay: -0.072s;
+}
+.lds-roller div:nth-child(2):after {
+  top: 54px;
+  left: 45px;
+}
+.lds-roller div:nth-child(3) {
+  animation-delay: -0.108s;
+}
+.lds-roller div:nth-child(3):after {
+  top: 57px;
+  left: 39px;
+}
+.lds-roller div:nth-child(4) {
+  animation-delay: -0.144s;
+}
+.lds-roller div:nth-child(4):after {
+  top: 58px;
+  left: 32px;
+}
+.lds-roller div:nth-child(5) {
+  animation-delay: -0.18s;
+}
+.lds-roller div:nth-child(5):after {
+  top: 57px;
+  left: 25px;
+}
+.lds-roller div:nth-child(6) {
+  animation-delay: -0.216s;
+}
+.lds-roller div:nth-child(6):after {
+  top: 54px;
+  left: 19px;
+}
+.lds-roller div:nth-child(7) {
+  animation-delay: -0.252s;
+}
+.lds-roller div:nth-child(7):after {
+  top: 50px;
+  left: 14px;
+}
+.lds-roller div:nth-child(8) {
+  animation-delay: -0.288s;
+}
+.lds-roller div:nth-child(8):after {
+  top: 45px;
+  left: 10px;
+}
+@keyframes lds-roller {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+#area4vu {
+  height: 150px;
+}
+
+#area4vu canvas, #myCanvas1 {
+  background-color: transparent;
+  /* background-color: whitesmoke; */
+  /* max-width: 51px; */
+  /* max-height: 130px; */
+}

@@ -1,0 +1,158 @@
+<!doctype html>
+<html class="no-js" lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>HTML5 Audio</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="manifest" href="site.webmanifest">
+
+  <meta http-equiv="cache-control" content="no-cache" />
+
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link href="https://fonts.googleapis.com/css?family=PT+Sans+Narrow|Open+Sans+Condensed:300" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/normalize.css">
+  <link rel="stylesheet" href="../styles/main.css">
+  
+  <link rel="stylesheet" href="../styles/spectre-0.5.8/spectre.min.css" />
+  <link rel="stylesheet" href="../styles/spectre-0.5.8/spectre-exp.min.css" />
+  <link rel="stylesheet" href="../styles/spectre-0.5.8/spectre-icons.min.css" />
+
+  <link rel="stylesheet" href="../styles/custom.css?parameter=3" type="text/css">
+
+  <!-- include embedded font awesome (registered)-->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+</head>
+
+<body>
+  <!--[if lte IE 9]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+  <![endif]-->
+
+  <!-- Add your site or application content here -->
+
+  <div id="head">
+    <h1>HTML5 Audio / Tutorial Part 4</h1>
+  </div>
+  <div-- id="main">
+    <div id="content_text">
+      <h2>Time based spectrogram</h2>
+      <ul>
+        <li><strong>AudioContext</strong>&NonBreakingSpace;-&NonBreakingSpace;
+          <a 
+            href="https://developer.mozilla.org/en-US/docs/Web/API/AudioContext#Browser_compatibility" 
+            target="_blank">
+              Browser compatibility
+          </a>
+        </li>
+        <li><strong>webkitAudioContext</strong>&NonBreakingSpace;-&NonBreakingSpace;
+          <a 
+            href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Porting_webkitAudioContext_code_to_standards_based_AudioContext" 
+            target="_blank">
+              is deprecated
+          </a> / 
+          <a 
+            href="https://webkit.org/" 
+            target="_blank">
+              WebKit
+          </a> 
+        </li>
+        <li><strong>BaseAudioContext.decodeAudioData()</strong>&NonBreakingSpace;-&NonBreakingSpace;
+          <a 
+            href="https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/decodeAudioData#Browser_compatibility" 
+            target="_blank">
+              Browser compatibility
+          </a>
+        </li>
+      </ul>
+      <p id="status">
+      </p>
+      
+      <div class="form-group">
+        <button id="btnPlay" class="btn btn-success disabled form-inline">
+          <i id="iconPlay" class="fas fa-play-circle"></i>
+        </button>
+        <button id="btnReload" class="btn btn-warning form-inline">
+          <i class="fas fa-redo"></i>
+        </button>
+        <label class="form-checkbox form-inline">
+          <input type="checkbox" id="checkVU" disabled>
+          <i class="form-icon"></i> VU
+        </label>
+        <label class="form-checkbox form-inline">
+          <input type="checkbox" id="checkFS" disabled>
+          <i class="form-icon"></i> Frequency Spectrum
+        </label>
+        <label class="form-checkbox form-inline">
+          <input type="checkbox" id="checkSG" checked>
+          <i class="form-icon"></i> Spectogram
+        </label>
+        <!-- <label class="form-radio form-inline">
+          <input type="radio" name="variant" checked value="1"><i class="form-icon"></i> 1
+        </label>
+        <label class="form-radio form-inline">
+          <input type="radio" name="variant" value="2"><i class="form-icon"></i> 2
+        </label> -->
+        
+      </div>
+
+      <div id="samplerate"></div>
+      <div id="fpsSG"></div>
+    </div>
+    <div id="area4vu"></div>
+    <div id="area4freq-spectrum"></div>
+    <div id="area4spectogram"></div>
+    <!--canvas
+      id="myCanvas3"
+      width="800"
+      height="512"
+      style="border: 1px solid  whitesmoke; background-color: transparent; max-width: 800px; max-height: 512px;"
+      >Your Browser don't support canvas!</canvas
+    -->
+    <!--canvas
+      id="myCanvas1"
+      width="50"
+      height="130"
+      >Your Browser don't support canvas!</canvas
+    -->
+    <!--canvas
+      id="myCanvas2"
+      width="1000"
+      height="325"
+      style="background-color: whitesmoke; max-width: 1000px; max-height: 325px;"
+      >Your Browser don't support canvas!</canvas
+    >
+  </div-->
+
+
+  <div id="spinner" style="position: absolute; top:25%; left: 25%;width: 50%;background: whitesmoke;color:#393839;">
+    <div id="center" style="margin:0 auto;width: 25%;text-align: center">
+      <div class="lds-roller">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      </div>
+      <div id="spinnerText" style="margin:15px auto;width: 25%;text-align: center; color:#393839;"></div>
+  </div>
+
+
+  <script src="../scripts/vendor/modernizr-3.6.0.min.js"></script>
+  <!--<script src="../scripts/plugins.js"></script>-->
+  <!--script src="../scripts/main.js?v=0.1"></script--><!-- https://stackoverflow.com/a/7772567 -->
+  <script src="../scripts/functions.js?v=0.2"></script><!-- https://stackoverflow.com/a/7772567 -->
+  <script src="../scripts/myChromaFake.js?v=0.1"></script><!-- https://stackoverflow.com/a/7772567 -->
+  <script src="../scripts/tutorial/paint.js?v=0.2"></script><!-- https://stackoverflow.com/a/7772567 -->
+  <script src="../scripts/fps.js?v=0.1"></script><!-- https://stackoverflow.com/a/7772567 -->
+  <script src="../scripts/tutorial/part-4.js?v=0.18"></script><!-- https://stackoverflow.com/a/7772567 -->
+  <!--
+    type bei javascript nicht benötigt
+    (https://www.w3schools.com/js/js_conventions.asp
+    'Loading JavaScript in HTML')
+   -->
+
+</body>
+
+</html>
