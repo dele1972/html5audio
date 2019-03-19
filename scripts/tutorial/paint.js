@@ -135,7 +135,7 @@ class Paint {
 
     incColCount() {
         this.colcount++;
-        console.log('PAINT.JS: ColCount', this.colcount);
+        // console.log('PAINT.JS: ColCount', this.colcount);
     }
 
     copy2shadow() {
@@ -221,11 +221,15 @@ class Paint {
     }
 
     pushAudioStack(array) {
-        this.audioStack.push(array);
-        this.audioStackCnt++;
-        console.log('PAINT.JS: pushAudioStack()', this.audioStackCnt, this.audioStack.length);
-        if (this.audioStack.length >  0 && this.audioStack.length % this.audioStackChunksize === 0) {
-            window.dispatchEvent(this.eAudioStackTrigger);
+        if (this.audioStackCnt <= this.width) {
+            this.audioStack.push(array);
+            this.audioStackCnt++;
+            console.log('PAINT.JS: pushAudioStack()', this.audioStackCnt, this.audioStack.length);
+            if (this.audioStack.length >  0 && this.audioStack.length % this.audioStackChunksize === 0) {
+                window.dispatchEvent(this.eAudioStackTrigger);
+            }
+        } else {
+            // console.log('supress pushAudioStack', this.audioStackCnt, array);
         }
     }
 
@@ -255,7 +259,7 @@ class Paint {
     // drawFullSpectrogram(array) {
     drawSpectrogramCol(array) {
         // console.log('PAINT.JS: drawSpectrogramCol', this.colcount,array);
-        console.log('PAINT.JS: drawSpectrogramCol', this.colcount);
+        // console.log('PAINT.JS: drawSpectrogramCol', this.colcount);
         // copy the current canvas onto the temp canvas
         // this.copy2shadow();
         // const x = (this.shadowCanvas1.colcount < this.width) ? this.shadowCanvas1.colcount : this.width - 1;

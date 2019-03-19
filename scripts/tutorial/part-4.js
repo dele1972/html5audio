@@ -14,94 +14,67 @@
 // https://dzone.com/articles/exploring-html5-web-audio
 
 
-// let paintVu = new Paint({
-//     'parent': document.getElementById('area4vu'),
-//     'width': 50,
-//     'height': 130,
-//     'gradient': true
-// });
-
-// let paintFS = new Paint({
-//     'parent': document.getElementById('area4freq-spectrum'),
-//     'width': 1000,
-//     'height': 325,
-//     'gradient': true
-// });
-
-// 694 Spalten für Wagner (0-693)
-const audioSG = {
-    fftSize: 1024,
-    ProcessorBufferSize: 2048
-};
-let paintSG = {};
-
-const elPStatus = document.getElementById("status");
-
-
-if (isIosDevice()){
-    elPStatus.innerHTML = "<strong style='color:red'>Sorry, but the Web Audio API is not supported by your browser. Please, consider upgrading to the latest version or downloading Google Chrome or Mozilla Firefox</strong>";
-    throw new Error("Sorry, but the Web Audio API is not supported by your browser!");
-}
 
 // (1) create the audio context
 let AudioContext = window.AudioContext || window.webkitAudioContext; // Cross browser
-let audioContext = new AudioContext();
 // https://stackoverflow.com/a/21413520/6628517
 // https://stackoverflow.com/questions/29373563/audiocontext-on-safari#29373891
 
-let audioBuffer;
-let sourceNode; 
-let splitter2, 
-    analyserNode2_1, analyserNode2_2, 
-    javascriptNode2;
-let analyserNode3,
-    javascriptNode3;
-let analyserNode4, 
-    javascriptNode4;
+let BaseAudio = {
+    audioContext: new AudioContext(),
+    sourceNode: {}
+};
 
+let VolumeMeter = {
+    active: true,
+    short: 'VU',
+    inputElement: document.getElementById("checkVU"),
+    paint: {},
+    splitter2: {},
+    analyserNode2_1: {},
+    analyserNode2_2: {},
+    javascriptNode2: {}
+};
 
-let drawVUChanges = true;
+let FrequencySpectrum = {
+    active: true,
+    short: 'FS',
+    inputElement: document.getElementById("checkFS"),
+    paint: {},
+    analyserNode3: {},
+    javascriptNode3: {},
+    smoothingTimeConstant: 0.3,
+    fftSize: 512,
+    ProcessorBufferSize: 2048
+};
 
+let Spectogram = {
+    active: true,
+    short: 'SG',
+    inputElement: document.getElementById("checkSG"),
+    fftSize: 1024,
+    ProcessorBufferSize: 2048,
+    paint: {},
+    analyserNode4: {},
+    javascriptNode4: {}
+};
 
 // chrome want to create an audionode by user interaction like click - but start playing a sound by ui seems to be minimum requirement
 let playState = false;
 let stopState = false;
 
-
-let allVuData = [];
-let allFSData = [];
-let allSGData = [];
-
 let fps = new myFPS();
-
-let doAnimationFrame = false;
-
-const elSpinnerDiv = document.getElementById("spinner");
-const elSpinnerText = document.getElementById("spinnerText");
-const elBtnPlay = document.getElementById("btnPlay");
-const elIconPlay = document.getElementById("iconPlay");
-
-const elBtnReload = document.getElementById("btnReload");
-
-const elCbVU = document.getElementById("checkVU");
-const elCbFS = document.getElementById("checkFS");
-const elCbSG = document.getElementById("checkSG");
-
 
 // add a custom event, would be fired after sound is decoded and ready to play
 // (https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Creating_and_triggering_events)
 let eAudioReady = new Event('audioReady');
-window.addEventListener('audioReady', onStart, false);
 
-window.addEventListener('audioStackTrigger', onAudioStackTrigger, false);
-
-setupAudioNodes();
-
-// load the sound
-// AlagaesiaAndEragon.ogg, Tanner Helland, Creative Commons Attribution-ShareAlike 3.0 License
-// https://www.tannerhelland.com/66/alagaesia-eragon-piano/
-// loadSound("../files/AlagaesiaAndEragon.ogg");
-loadSound("../files/wagner-short.ogg");
+const elPStatus = document.getElementById("status");
+const elSpinnerDiv = document.getElementById("spinner");
+const elSpinnerText = document.getElementById("spinnerText");
+const elBtnPlay = document.getElementById("btnPlay");
+const elIconPlay = document.getElementById("iconPlay");
+const elBtnReload = document.getElementById("btnReload");
 
 let localAudioStackTrigger = false;
 function onAudioStackTrigger() {
@@ -109,35 +82,35 @@ function onAudioStackTrigger() {
     localAudioStackTrigger = true;
 }
 
-/**
- * onStart
- * will be called by custom event-listener 'audioReady' which will be emmitted by decodeSound()
- */
-function onStart(){
+function initPaintVU() {
+    VolumeMeter.paint = new Paint({
+        'parent': document.getElementById('area4vu'),
+        'width': 50,
+        'height': 130,
+        'gradient': true
+    });
     
-    // disable spinner
-    elSpinnerDiv.style.display = "none";
+}
 
-    paintSG = new Paint({
-            'parent': document.getElementById('area4spectogram'),
-            'width': Math.ceil(sourceNode.buffer.length/audioSG.ProcessorBufferSize),
-            'height': Math.ceil(audioSG.fftSize/sourceNode.buffer.numberOfChannels),
-            'gradient': false,
-            'shadowCanvas': true,
-            'hot': new myChromaFake()
-        });
-        
-    // show Samplerate
-    document.getElementById('samplerate').innerHTML = audioContext.sampleRate + " Hz" +
-        ' / ' + sourceNode.buffer.length + " Samples" +
-        ' / ' + sourceNode.buffer.duration + " Sec." +
-        ' / ' + sourceNode.buffer.numberOfChannels + " Channels" +
-        ' / ' + paintSG.width + " x " + paintSG.height;
+function initPaintFS() {
+    FrequencySpectrum.paint = new Paint({
+        'parent': document.getElementById('area4freq-spectrum'),
+        'width': 1000,
+        'height': 325,
+        'gradient': true
+    });
 
-    // enable play button
-    removeCssClass(elBtnPlay, 'disabled');
+}
 
-    elPStatus.innerHTML = "Status: Sound is loaded and decoded - ready to play";
+function initPaintSG() {
+    Spectogram.paint = new Paint({
+        'parent': document.getElementById('area4spectogram'),
+        'width': Math.ceil(BaseAudio.sourceNode.buffer.length/Spectogram.ProcessorBufferSize),
+        'height': Math.ceil(Spectogram.fftSize/BaseAudio.sourceNode.buffer.numberOfChannels),
+        'gradient': false,
+        'shadowCanvas': true,
+        'hot': new myChromaFake()
+    });
 }
 
 function setupAudioNodes() {
@@ -146,7 +119,7 @@ function setupAudioNodes() {
     // sourceNode, splitter2, analyserNode2_, analyserNode3, javascriptNode2, javascriptNode3
     
     // create a buffer source node
-    sourceNode = audioContext.createBufferSource();
+    BaseAudio.sourceNode = BaseAudio.audioContext.createBufferSource();
 
     setNodesVU();
     setNodesFS();
@@ -155,46 +128,142 @@ function setupAudioNodes() {
 
 function setNodesVU () {
         // A) setup a analyzer
-        analyserNode2_1 = audioContext.createAnalyser();
-        analyserNode2_1.smoothingTimeConstant = 0.3;
-        analyserNode2_1.fftSize = 1024;
+        VolumeMeter.analyserNode2_1 = BaseAudio.audioContext.createAnalyser();
+        VolumeMeter.analyserNode2_1.smoothingTimeConstant = 0.3;
+        VolumeMeter.analyserNode2_1.fftSize = 1024;
         
         // A) setup a 2nd analyzer (for each channel vu)
-        analyserNode2_2 = audioContext.createAnalyser();
-        analyserNode2_2.smoothingTimeConstant = 0.0;
-        analyserNode2_2.fftSize = 1024;
+        VolumeMeter.analyserNode2_2 = BaseAudio.audioContext.createAnalyser();
+        VolumeMeter.analyserNode2_2.smoothingTimeConstant = 0.0;
+        VolumeMeter.analyserNode2_2.fftSize = 1024;
         // A) split audio channel
-        splitter2 = audioContext.createChannelSplitter();
+        VolumeMeter.splitter2 = BaseAudio.audioContext.createChannelSplitter();
+        
         // II) setup a javascript node for VU
         // * https://developer.mozilla.org/de/docs/Web/API/ScriptProcessorNode
-        javascriptNode2 = audioContext.createScriptProcessor(2048, 1, 1);
+        VolumeMeter.javascriptNode2 = BaseAudio.audioContext.createScriptProcessor(2048, 1, 1);
+
+        // when the javascript node is called we use information from the analyzer node to draw the volume;
+        // Since the data is sampled at 44.1k, this function will be called approximately 21 times a second
+        VolumeMeter.javascriptNode2.onaudioprocess = function() {
+
+            // if(drawVUChanges) {
+            if(playState && VolumeMeter.inputElement.checked) {
+
+                // get the average for the first channel (bincount is fftsize / 2)
+                var array =  new Uint8Array(VolumeMeter.analyserNode2_1.frequencyBinCount);
+                VolumeMeter.analyserNode2_1.getByteFrequencyData(array);
+                var average = getAverageVolume(array);
+                // console.log("average (one channel)= ", average);
+                
+                // get the average for the second channel
+                var array2 =  new Uint8Array(VolumeMeter.analyserNode2_2.frequencyBinCount);
+                VolumeMeter.analyserNode2_2.getByteFrequencyData(array2);
+                var average2 = getAverageVolume(array2);
+                
+                // create the meters
+                // canvascontext.fillRect(x,y,width,height);
+                const totalRectHeight = 130;
+                VolumeMeter.paint.clearCanvas(0, 0, 50, 130);
+                const vuParam = {
+                    'channelwidth': 25, 
+                    'left': {
+                        'x': 0, 
+                        'y': totalRectHeight- (totalRectHeight * average / 100),
+                        'average': average
+                    },
+                    'right': {
+                        'x': 0, 
+                        'y': totalRectHeight- (totalRectHeight * average2 / 100),
+                        'average': average2
+                    }
+                };
+                VolumeMeter.paint.drawVu(vuParam);
+            }
+        };
+
 }
 
 function setNodesFS () {
         // B) setup a 3rd analyzer (for frequency spectrum)
         // We set the fftSize to 512. This means we get 256 bars that represent our frequency. 
-        analyserNode3 = audioContext.createAnalyser();
-        analyserNode3.smoothingTimeConstant = 0.3;
-        analyserNode3.fftSize = 512;
+        FrequencySpectrum.analyserNode3 = BaseAudio.audioContext.createAnalyser();
+        FrequencySpectrum.analyserNode3.smoothingTimeConstant = FrequencySpectrum.smoothingTimeConstant;
+        FrequencySpectrum.analyserNode3.fftSize = FrequencySpectrum.fftSize;
+
         // III) setup a 'javascriptnode' for frequency spectrum
-        javascriptNode3 = audioContext.createScriptProcessor(2048, 1, 1);
+        FrequencySpectrum.javascriptNode3 = BaseAudio.audioContext.createScriptProcessor(FrequencySpectrum.ProcessorBufferSize, 1, 1);
+        
+        FrequencySpectrum.javascriptNode3.onaudioprocess = function() {
+            
+            if(playState && FrequencySpectrum.inputElement.checked) {
+                /* frequency spectrum */
+
+                    // get the average for the first channel
+                    let arrayFS =  new Uint8Array(FrequencySpectrum.analyserNode3.frequencyBinCount);
+                    FrequencySpectrum.analyserNode3.getByteFrequencyData(arrayFS);
+                
+                    // clear the current state
+                    // ctxFS.clearRect(0, 0, widthFS, heightFS);
+                    FrequencySpectrum.paint.clearCanvas(0, 0, FrequencySpectrum.paint.width, FrequencySpectrum.paint.height);
+                
+                    // set the fill style
+                    // ctxFS.fillStyle=gradient;
+                    // drawSpectrum(arrayFS);
+                    FrequencySpectrum.paint.drawSpectrum(arrayFS);
+            }
+        };
+
 }
 
 function setNodesSG() {
-        // `The analyser we create here has an fftSize of 1024, this means we get 512 frequency buckets
-        // with strengths. So we can draw a spectrogram that has a height of 512 pixels. Also note 
-        // that the smoothingTimeConstant is set to 0. 
-        // This means we don't use any of the previous results in the analysis. We want to show the 
-        // real information, not provide a smooth volume meter or frequency spectrum analysis.´
-        analyserNode4 = audioContext.createAnalyser();
-        analyserNode4.smoothingTimeConstant = 0;
-        analyserNode4.fftSize = audioSG.fftSize;
-        // IV) setup a 'javascriptnode' for spectogram
-        javascriptNode4 = audioContext.createScriptProcessor(audioSG.ProcessorBufferSize, 1, 1);
+    // `The analyser we create here has an fftSize of 1024, this means we get 512 frequency buckets
+    // with strengths. So we can draw a spectrogram that has a height of 512 pixels. Also note 
+    // that the smoothingTimeConstant is set to 0. 
+    // This means we don't use any of the previous results in the analysis. We want to show the 
+    // real information, not provide a smooth volume meter or frequency spectrum analysis.´
+    Spectogram.analyserNode4 = BaseAudio.audioContext.createAnalyser();
+    Spectogram.analyserNode4.smoothingTimeConstant = 0;
+    Spectogram.analyserNode4.fftSize = Spectogram.fftSize;
+    
+    // IV) setup a 'javascriptnode' for spectogram
+    Spectogram.javascriptNode4 = BaseAudio.audioContext.createScriptProcessor(Spectogram.ProcessorBufferSize, 1, 1);
 
+    Spectogram.javascriptNode4.onaudioprocess = function (audioProcessingEvent) {
+        /*
+        INFO (https://medium.com/web-audio/you-dont-need-that-scriptprocessor-61a836e28b42)
+        Using a buffer size of 1024 means that every 1024 sample frames, the AudioProcess event will fire, and your callback will be called. The AudioContext uses a sample rate of 44100Hz (44.1 kHz) by default. This is pretty standard in audio processing, and chances are that you won’t have any reason to change it. So, some simple math: each sample frame is 1 / 44100 = 0.00002267 seconds long. Each buffer then is 1024 * 0.00002267 = 0.0232 seconds long, which is the length of time in between each invocation of your callback. Woah. Every .0232s your event loop gets hit with another function call. That’s 43 callbacks per second, just for one ScriptProcessor! You can run through that math again with a buffer size of 4096 if you want to, you’ll find that you’re not saving yourself much trouble. Buffer size vs. latency is a tradeoff that you hopefully have already considered anyway.
+        ...
+        Certainly if you’re working on any sort of interactive audiovisual experiment, you’ll want to be mindful of cutting processor costs as much as possible.
+        */
+       if (Spectogram.paint.colcount <= Spectogram.paint.width || (Spectogram.paint.colcount === 0 && initializingPlaySound )) {
+            document.getElementById('fpsSG').innerHTML = 'FPS (Spectogram): ' + fps.getFPS();
+    
+            // get the average for the first channel
+            // frequencyBinCount (512) is half the analyzernode fft (1024), 
+            // then call Uint8Array() with the frequencyBinCount as its length argument
+            // — this is how many data points we will be collecting, for that fft size.)
+            let array4 = new Uint8Array(Spectogram.analyserNode4.frequencyBinCount);
+
+            // To actually retrieve the data and copy it into our array, we then call the data collection method
+            Spectogram.analyserNode4.getByteFrequencyData(array4);
+
+            // draw the spectrogram
+            Spectogram.paint.pushAudioStack(array4);
+
+            initializingPlaySound = false;
+            
+        } else {
+            console.log('Spectogram.javascriptNode4    *** END ***');
+            disconnectSG();
+            return;
+        }
+
+    };
 }
 
 function connectNodes() {
+    console.log('connecting nodes');
         
     /*   CONNECT ALL NODES   */
     // I: sourceNode (soundfile) -> output
@@ -203,46 +272,47 @@ function connectNodes() {
     // III     |------------------> analyserNode3   -> javascriptNode3
     // IV      |------------------> analyserNode4   -> javascriptNode4
 
-    // connectNodeVU();
-    // connectNodeFS();
+    connectNodeVU();
+    connectNodeFS();
     connectNodeSG();
     connectOutput();
 }
 
 function connectNodeVU() {
     // A) connect the source to the analyser and the splitter
-    sourceNode.connect(splitter2);
+    BaseAudio.sourceNode.connect(VolumeMeter.splitter2);
 
     // A) connect one of the outputs from the splitter to the analyser
-    splitter2.connect(analyserNode2_1,0,0);
-    splitter2.connect(analyserNode2_2,1,0);
+    VolumeMeter.splitter2.connect(VolumeMeter.analyserNode2_1,0,0);
+    VolumeMeter.splitter2.connect(VolumeMeter.analyserNode2_2,1,0);
     // A) we use the javascript node to draw at a specific interval.
-    analyserNode2_1.connect(javascriptNode2);
+    VolumeMeter.analyserNode2_1.connect(VolumeMeter.javascriptNode2);
     // A) connect to destination, else it isn't called
-    javascriptNode2.connect(audioContext.destination);
+    VolumeMeter.javascriptNode2.connect(BaseAudio.audioContext.destination);
 }
 
 function connectNodeFS() {
     // B) connect the source to the analyser3
-    sourceNode.connect(analyserNode3);
+    BaseAudio.sourceNode.connect(FrequencySpectrum.analyserNode3);
     // B) we use the javascript node to draw at a specific interval.
-    analyserNode3.connect(javascriptNode3);
+    FrequencySpectrum.analyserNode3.connect(FrequencySpectrum.javascriptNode3);
     // B) connect to destination, else it isn't called
-    javascriptNode3.connect(audioContext.destination);
+    FrequencySpectrum.javascriptNode3.connect(BaseAudio.audioContext.destination);
 }
 
 function connectNodeSG() {
+    console.log('connecting SG Nodes');
     // C) connect the source to the analyser4
-    sourceNode.connect(analyserNode4);
+    BaseAudio.sourceNode.connect(Spectogram.analyserNode4);
     // C) we use the javascript node to draw at a specific interval.
-    analyserNode4.connect(javascriptNode4);
+    Spectogram.analyserNode4.connect(Spectogram.javascriptNode4);
     // C) connect to destination, else it isn't called
-    javascriptNode4.connect(audioContext.destination);
+    Spectogram.javascriptNode4.connect(BaseAudio.audioContext.destination);
 }
 
 function connectOutput() {
     // and connect to destination, if you want audio, (comment for 'mute')
-    sourceNode.connect(audioContext.destination);
+    BaseAudio.sourceNode.connect(BaseAudio.audioContext.destination);
 }
 
 /**
@@ -273,10 +343,10 @@ function decodeSound(requestBuffer){
     elSpinnerText.innerHTML = "Decoding Soundfile ...";
     // decode the data (https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/decodeAudioData)
     // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Porting_webkitAudioContext_code_to_standards_based_AudioContext#Removal_of_the_synchronous_AudioContext.createBuffer_method
-        audioContext.decodeAudioData(requestBuffer)
+        BaseAudio.audioContext.decodeAudioData(requestBuffer)
         .then(function(buffer) {
                 // decode is finished, save buffer
-                sourceNode.buffer = buffer;
+                BaseAudio.sourceNode.buffer = buffer;
                 // document.getElementById('samplerate').innerHTML = audioContext.sampleRate + " Hz";
                 // shout out that decoding is finished - someone will probably handle the data...
                 window.dispatchEvent(eAudioReady);
@@ -285,65 +355,6 @@ function decodeSound(requestBuffer){
             })
             .catch(onErrorCust);
 }
-
-// when the javascript node is called we use information from the analyzer node to draw the volume;
-// Since the data is sampled at 44.1k, this function will be called approximately 21 times a second
-javascriptNode2.onaudioprocess = function() {
-
-    // if(drawVUChanges) {
-    if(playState && elCbVU.checked) {
-
-        // get the average for the first channel (bincount is fftsize / 2)
-        var array =  new Uint8Array(analyserNode2_1.frequencyBinCount);
-        analyserNode2_1.getByteFrequencyData(array);
-        var average = getAverageVolume(array);
-        // console.log("average (one channel)= ", average);
-        
-        // get the average for the second channel
-        var array2 =  new Uint8Array(analyserNode2_2.frequencyBinCount);
-        analyserNode2_2.getByteFrequencyData(array2);
-        var average2 = getAverageVolume(array2);
-        
-        // create the meters
-        // canvascontext.fillRect(x,y,width,height);
-        const totalRectHeight = 130;
-        paintVu.clearCanvas(0, 0, 50, 130);
-        const vuParam = {
-            'channelwidth': 25, 
-            'left': {
-                'x': 0, 
-                'y': totalRectHeight- (totalRectHeight * average / 100),
-                'average': average
-            },
-            'right': {
-                'x': 0, 
-                'y': totalRectHeight- (totalRectHeight * average2 / 100),
-                'average': average2
-            }
-        };
-        paintVu.drawVu(vuParam);
-    }
-};
-
-javascriptNode3.onaudioprocess = function() {
-    
-    if(playState && elCbFS.checked) {
-        /* frequency spectrum */
-
-            // get the average for the first channel
-            let arrayFS =  new Uint8Array(analyserNode3.frequencyBinCount);
-            analyserNode3.getByteFrequencyData(arrayFS);
-        
-            // clear the current state
-            // ctxFS.clearRect(0, 0, widthFS, heightFS);
-            paintFS.clearCanvas(0, 0, paintFS.width, paintFS.height);
-        
-            // set the fill style
-            // ctxFS.fillStyle=gradient;
-            // drawSpectrum(arrayFS);
-            paintFS.drawSpectrum(arrayFS);
-    }
-};
 
 function drawSpectrumDEPR(array) {
     for ( var i = 0; i < (array.length); i++ ){
@@ -354,41 +365,15 @@ function drawSpectrumDEPR(array) {
 
 let snapshotData = [];
 let dataHarvester = [];
-let timecounter = 0;
+let animationFrameCounter = 0;
 function drawCanvases() {
             
-        /*
-        todo:
-        1. (hier) push array to class-array (Paint.audioStack)
-        2. (drawcanvas) je 10 animframes - zeichne in class das spektogramm, setze einen trigger
-        3. (drawcanvas) wenn trigger, dann kopiere canvas
-        4. (bei ende) ist class array leer? nein, dann zeichne rest
-           
-        */
-
-    // if(playState && allSGData[0] !== undefined){
-    // if(playState && elCbSG.checked){
-        timecounter++;
-        // console.log(performance.now(),"drasw",allSGData,allSGData.length);
-
-        // for (let i=0; i<=allSGData.length;i++){
-            // console.log(performance.now(),"for",allSGData.length);
-            // if(allSGData[0].isArray()){
-
-                // drawSpectrogram(allSGData[0]);
-                // drawSpectrogram(snapshotData);
-                // paintSG.drawSpectrogram(snapshotData);
-                console.log('drawCanvases', paintSG.colcount, timecounter, paintSG.getAudioStackLength(),
-                paintSG.getAudioStackChunksize(),
-                paintSG.getAudioStackLength() % paintSG.getAudioStackChunksize());
-                // if (paintSG.getAudioStackLength() > 0 && 
-                // paintSG.getAudioStackLength() % paintSG.getAudioStackChunksize() === 0) {
-                    paintSG.orderSpectogramPaint();
-                // }
-                // allSGData.shift();
-                // }
-                // }
-    // }
+    animationFrameCounter++;
+    console.log('drawCanvases', Spectogram.paint.colcount, animationFrameCounter, Spectogram.paint.getAudioStackLength(),
+        Spectogram.paint.getAudioStackChunksize(),
+        Spectogram.paint.getAudioStackLength() % Spectogram.paint.getAudioStackChunksize());
+    
+        Spectogram.paint.orderSpectogramPaint();
             
     if (localAudioStackTrigger) {
         localAudioStackTrigger = false;
@@ -396,53 +381,12 @@ function drawCanvases() {
     }
     
     // if (doAnimationFrame) {
-    if (paintSG.colcount <= paintSG.width) {
+    if (Spectogram.paint.colcount <= Spectogram.paint.width || (Spectogram.paint.colcount === 0 && initializingPlaySound )) {
         requestAnimationFrame(drawCanvases);
     } else {
         console.log('no reqAnimFra');
-        javascriptNode4.disconnect();
-        // analyserNode4.disconnect();
     }
 }
-
-javascriptNode4.onaudioprocess = function (audioProcessingEvent) {
-    // console.log("javascriptNode4.onaudioprocess ------------- 1");
-    // if(playState && elCbSG.checked) {
-    if(playState) {
-        // console.log("javascriptNode4.onaudioprocess ------------- 2");
-        // console.log("onaudioprocess: ", audioProcessingEvent.inputBuffer, analyserNode4.frequencyBinCount, audioProcessingEvent.outputBuffer);
-        // @todo: connect erst bei play click
-        document.getElementById('fpsSG').innerHTML = 'FPS (Spectogram): ' + fps.getFPS();
-
-  
-        // get the average for the first channel
-        // frequencyBinCount (512) is half the analyzernode fft (1024), 
-        // then call Uint8Array() with the frequencyBinCount as its length argument
-        // — this is how many data points we will be collecting, for that fft size.)
-        let array4 = new Uint8Array(analyserNode4.frequencyBinCount);
-        // To actually retrieve the data and copy it into our array, we then call the data collection method
-        analyserNode4.getByteFrequencyData(array4);
-
-        // draw the spectrogram
-        
-        /*
-        todo:
-        1. (hier) push array to class-array (Paint.audioStack)
-        2. (drawcanvas) je 10 animframes - zeichne in class das spektogramm, setze einen trigger
-        3. (drawcanvas) wenn trigger, dann kopiere canvas
-        4. (bei ende) ist class array leer? nein, dann zeichne rest
-           
-        */
-        paintSG.pushAudioStack(array4);
-        
-        // paintSG.drawFullSpectrogram(array4);
-        // drawSpectrogram(array4);
-        // allSGData.push(array4);
-        // snapshotData = array4;  // es werden mehr array's gebildet als angezeigt werden können - snapshot wird zumeist überschrieben und nur jedes x. mal wirklich gezeichnet... 
-        // dataHarvester.push(array4);
-        // shadowC.addElement(array4); // @todo: this should work - bad performance
-    }
-};
 
 let colCount = 0;
 function drawSpectrogramDEPR(array) {
@@ -548,19 +492,15 @@ function doPlay(){
         }
     }
 }
-
+let initializingPlaySound;
 function playSound() {
     elPStatus.innerHTML = 'Status: Start playing sound';
     console.log('start playing');
-    sourceNode.start();
-    doAnimationFrame = true;
+    BaseAudio.sourceNode.start();
+    // doAnimationFrame = true;
+    initializingPlaySound = true;
     drawCanvases();
 }
-
-sourceNode.onended = function() {
-    console.log("END of soundfile");
-    doEnd(); 
-};
 
 function doEnd() {
     console.log("doEnd....");
@@ -568,41 +508,41 @@ function doEnd() {
     
     // doAnimationFrame = false;
     
-    // drawVUChanges = false;
-    // paintVu.disableDrawChanges();
-    // playState = false;
-    // ctx.clearRect(0, 0, width, height);
+    playState = false;
     removeCssClass(elBtnPlay, 'btn-success');
     addCssClass(elBtnPlay, 'disabled');
     addCssClass(elBtnPlay, 'btn-secondary');
-    // javascriptNode2.disconnect();
-    // javascriptNode3.disconnect();
-    javascriptNode4.disconnect();
-    // analyserNode2_1.disconnect();
-    // analyserNode2_2.disconnect();
-    // analyserNode3.disconnect();
-    analyserNode4.disconnect();
+
+    disconnectVU();
+    disconnectFS();
+    disconnectSG();
     // console.log("end object: ", shadowC.store, shadowC.lastElement);
+}
+function disconnectVU() {
+    // drawVUChanges = false;
+    VolumeMeter.paint.disableDrawChanges();
+    VolumeMeter.javascriptNode2.disconnect();
+    VolumeMeter.analyserNode2_1.disconnect();
+    VolumeMeter.analyserNode2_2.disconnect();
+}
+function disconnectFS() {
+    FrequencySpectrum.javascriptNode3.disconnect();
+    FrequencySpectrum.analyserNode3.disconnect();
+}
+function disconnectSG() {
+    Spectogram.javascriptNode4.disconnect();
+    Spectogram.analyserNode4.disconnect();
 }
 
 function stopSound() {
     console.log('stop playing');
-    sourceNode.stop();
+    BaseAudio.sourceNode.stop();
     elPStatus.innerHTML = 'Status: End of playing sound';
 }
 
 function doReload() {
     window.location.reload(false);
 }
-
-addEventListener("DOMContentLoaded", function(){
-    // start playing Music by an User click - because chrome and some other browsers force this behavior...
-    if (elBtnPlay != null)
-        elBtnPlay.addEventListener("click", doPlay);
-
-    if (elBtnReload != null)
-        elBtnReload.addEventListener("click", doReload);
-});
 
 function getVariant(){
     const el = document.getElementsByName('variant');
@@ -614,15 +554,81 @@ function getVariant(){
     return 1; // use variant 1 as default
 }
 
+/**
+ * onStart
+ * will be called by custom event-listener 'audioReady' which will be emmitted by decodeSound()
+ */
+function onStart(){
+    
+    // disable spinner
+    elSpinnerDiv.style.display = "none";
+
+        
+    // show Samplerate
+    document.getElementById('samplerate').innerHTML = BaseAudio.audioContext.sampleRate + " Hz" +
+    ' / ' + BaseAudio.sourceNode.buffer.length + " Samples" +
+    ' / ' + BaseAudio.sourceNode.buffer.duration + " Sec." +
+    ' / ' + BaseAudio.sourceNode.buffer.numberOfChannels + " Channels";
+    if (Spectogram.active) {
+        document.getElementById('samplerate').innerHTML += ' / ' + Spectogram.paint.width + " x " + Spectogram.paint.height;
+        initPaintSG();
+    }
+    if (VolumeMeter.active) {
+        initPaintVU();
+    }
+    if (FrequencySpectrum.active) {
+        initPaintFS();
+    }
+
+    // enable play button
+    removeCssClass(elBtnPlay, 'disabled');
+
+    elPStatus.innerHTML = "Status: Sound is loaded and decoded - ready to play";
+}
+
 function onErrorCust(e){
     stringifyLog(text="", e);
     elPStatus.innerHTML = "ERROR: <br/>" + JSON.stringify(e, null, '\t');
 
 }
 
-window.onload = function() {
-    console.log("foo");
-};
-window.addEventListener('load', function() {
-    console.log("bar");
+window.addEventListener('audioReady', onStart, false);
+
+window.addEventListener('audioStackTrigger', onAudioStackTrigger, false);
+
+window.addEventListener("DOMContentLoaded", function(){
+    // before 'onload' and 'load'
+
+    // add element event listener (start playing Music by an User click - because chrome and some other browsers force this behavior...)
+    if (elBtnPlay != null)
+        elBtnPlay.addEventListener("click", doPlay);
+
+    if (elBtnReload != null)
+        elBtnReload.addEventListener("click", doReload);
+
+    if (isIosDevice()){
+        document.getElementById("status").innerHTML = "<strong style='color:red'>Sorry, but the Web Audio API is not supported by your browser. Please, consider upgrading to the latest version or downloading Google Chrome or Mozilla Firefox</strong>";
+        throw new Error("Sorry, but the Web Audio API is not supported by your browser!");
+    }
+
+    setupAudioNodes();
+
+    // load the sound
+    // AlagaesiaAndEragon.ogg, Tanner Helland, Creative Commons Attribution-ShareAlike 3.0 License
+    // https://www.tannerhelland.com/66/alagaesia-eragon-piano/
+    // loadSound("../files/AlagaesiaAndEragon.ogg");
+    loadSound("../files/wagner-short.ogg");
 });
+
+window.onload = function() {
+    // after 'DOMContentLoaded' before 'load'
+};
+
+window.addEventListener('load', function() {
+    // after 'DOMContentLoaded' and 'onload'
+});
+
+BaseAudio.sourceNode.onended = function() {
+    console.log("*** END of soundfile ***");
+    doEnd(); 
+};
